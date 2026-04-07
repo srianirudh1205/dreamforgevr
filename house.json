@@ -1,0 +1,59 @@
+{
+  "rooms": [
+    {
+      "id": "living",
+      "name": "Living Room",
+      "width": 5.5,
+      "depth": 4.0,
+      "height": 3.0,
+      "position": { "x": 0, "y": 1.5, "z": -6 },
+      "material": "marble",
+      "color": "#D4B896",
+      "costPerSqft": 850
+    },
+    {
+      "id": "master",
+      "name": "Master Bedroom",
+      "width": 5.0,
+      "depth": 4.5,
+      "height": 3.0,
+      "position": { "x": 5.75, "y": 1.5, "z": -6 },
+      "material": "wood",
+      "color": "#8B5A2B",
+      "costPerSqft": 650
+    },
+    {
+      "id": "kitchen",
+      "name": "Kitchen",
+      "width": 4.0,
+      "depth": 3.5,
+      "height": 3.0,
+      "position": { "x": 10.75, "y": 1.5, "z": -6 },
+      "material": "tile",
+      "color": "#E0E0E0",
+      "costPerSqft": 500
+    },
+    {
+      "id": "bathroom",
+      "name": "Bathroom",
+      "width": 3.0,
+      "depth": 2.5,
+      "height": 3.0,
+      "position": { "x": 14.75, "y": 1.5, "z": -6 },
+      "material": "tile",
+      "color": "#ADD8E6",
+      "costPerSqft": 500
+    },
+    {
+      "id": "study",
+      "name": "Study",
+      "width": 3.5,
+      "depth": 3.0,
+      "height": 3.0,
+      "position": { "x": 18.50, "y": 1.5, "z": -6 },
+      "material": "wood",
+      "color": "#deb887",
+      "costPerSqft": 650
+    }
+  ]
+}

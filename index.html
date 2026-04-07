@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>DreamForge VR</title>
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    #cost-overlay {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      background: rgba(13, 27, 42, 0.9);
+      color: #C9A84C;
+      font-size: 24px;
+      font-weight: bold;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    #minimap {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      width: 200px;
+      height: 150px;
+      background: rgba(255, 255, 255, 0.85);
+      border: 2px solid #0D1B2A;
+      border-radius: 8px;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    #material-swapper {
+      position: absolute;
+      bottom: -150px; /* Hidden by default */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      background: rgba(13, 27, 42, 0.95);
+      border-radius: 12px 12px 0 0;
+      padding: 20px;
+      color: white;
+      text-align: center;
+      transition: bottom 0.3s ease-in-out;
+      z-index: 1000;
+      box-shadow: 0 -4px 15px rgba(0,0,0,0.5);
+    }
+
+    #material-swapper.active {
+      bottom: 0;
+    }
+
+    .swapper-title { margin-top: 0; font-size: 18px; color: #C9A84C; }
+
+    .material-btns {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 15px;
+    }
+
+    .mat-btn {
+      background: #1B263B;
+      border: 2px solid #415A77;
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+    .mat-btn:hover { background: #415A77; border-color: #C9A84C; }
+    
+    #close-swapper {
+      position: absolute;
+      top: 10px; right: 15px;
+      color: #fff; cursor: pointer; text-decoration: none; font-size: 18px;
+    }
+
+    #ar-btn-custom {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      background: #C9A84C;
+      color: #0D1B2A;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 1000;
+      font-size: 16px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="cost-overlay">Total Est. Cost: ₹0</div>
+  <svg id="minimap" viewBox="-5 -5 30 15"></svg>
+  
+  <div id="material-swapper">
+    <span id="close-swapper">&times;</span>
+    <h3 class="swapper-title">Swap Material for <span id="selected-room-name">Room</span></h3>
+    <div class="material-btns">
+      <button class="mat-btn" data-mat="marble" data-cost="850">Marble</button>
+      <button class="mat-btn" data-mat="wood" data-cost="650">Wood</button>
+      <button class="mat-btn" data-mat="tile" data-cost="500">Tile</button>
+      <button class="mat-btn" data-mat="brick" data-cost="350">Brick</button>
+    </div>
+  </div>
+
+  <button id="ar-btn-custom">Enter AR Mode</button>
+
+  <a-scene renderer="antialias: false; colorManagement: true; physicallyCorrectLights: false" webxr="optionalFeatures: hit-test;" vr-mode-ui="enabled: true">
+    <a-assets>
+      <img id="stem_info1" src="assets/textures/stem1.png">
+      <!-- We will just map simple colors if textures are missing, using A-Frame color properties -->
+    </a-assets>
+
+    <!-- Existing STEM Lab Background -->
+    <a-text value="Welcome to the STEM Lab!" position="0 6 -8" align="center" color="#4A4A4A" scale="2 2 2"></a-text>
+    <a-text value="- Interactive exhibits\n- Hands-on experiments\n- Learn about Science, Tech, Eng, Math" position="0 5 -8" align="center" color="#4A4A4A" wrap-count="30"></a-text>
+    <!-- We omit image src to avoid 404 if it is absent initially, but keep the entity -->
+    <a-image color="#ccc" position="0 3 -8" width="4" height="3"></a-image>
+
+    <!-- Environment -->
+    <a-sky color="#87CEEB"></a-sky>
+    <a-plane position="0 0 -5" rotation="-90 0 0" width="100" height="100" color="#7BC8A4"></a-plane>
+
+    <!-- Rooms Container -->
+    <a-entity id="house-container"></a-entity>
+    
+    <a-entity camera look-controls wasd-controls="fly:true" position="0 1.6 4">
+      <a-entity cursor="rayOrigin: mouse;" raycaster="objects: .clickable"></a-entity>
+    </a-entity>
+  </a-scene>
+
+  <script>
+    const SQM_TO_SQFT = 10.7639;
+    const MATERIAL_COLORS = {
+        marble: "#D4B896",
+        wood:   "#8B6347",
+        tile:   "#B0C4C8",
+        brick:  "#C1440E"
+    };
+
+    function formatINR(amount) {
+        return "₹" + Math.round(amount).toLocaleString("en-IN");
+    }
+
+    let houseData = null;
+    let selectedRoomId = null;
+
+    // Load Data
+    fetch('house.json')
+      .then(res => res.json())
+      .then(data => {
+        houseData = data;
+        renderRooms();
+        updateCost();
+        renderMinimap();
+        syncToDashboard();
+      })
+      .catch(err => console.error("Failed to load house data", err));
+
+    function getMaterialColor(material) {
+        return MATERIAL_COLORS[material] || '#FFFFFF';
+    }
+
+    function renderRooms() {
+      const container = document.getElementById('house-container');
+      container.innerHTML = '';
+      
+      houseData.rooms.forEach(room => {
+        const box = document.createElement('a-box');
+        box.setAttribute('position', `${room.position.x} ${room.position.y} ${room.position.z}`);
+        box.setAttribute('width', room.width);
+        box.setAttribute('height', room.height);
+        box.setAttribute('depth', room.depth);
+        box.setAttribute('color', getMaterialColor(room.material));
+        
+        const img = new Image();
+        img.onload = () => {
+             box.setAttribute('src', `assets/textures/${room.material}.jpg`);
+        };
+        img.src = `assets/textures/${room.material}.jpg`;
+
+        box.classList.add('clickable');
+        
+        // Interaction logic
+        box.addEventListener('click', () => {
+          selectedRoomId = room.id;
+          document.getElementById('selected-room-name').innerText = room.name;
+          document.getElementById('material-swapper').classList.add('active');
+        });
+
+        // Add a text label above room
+        const label = document.createElement('a-text');
+        label.setAttribute('value', room.name);
+        label.setAttribute('position', `0 ${room.height / 2 + 0.5} 0`);
+        label.setAttribute('align', 'center');
+        label.setAttribute('color', '#000');
+        label.setAttribute('scale', '2 2 2');
+        box.appendChild(label);
+
+        container.appendChild(box);
+      });
+    }
+
+    function renderMinimap() {
+        const svg = document.getElementById('minimap');
+        svg.innerHTML = '';
+        houseData.rooms.forEach(room => {
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            // position points to center. Adjust to top-left for SVG (x - w/2, z - d/2)
+            rect.setAttribute('x', room.position.x - room.width/2);
+            rect.setAttribute('y', (room.position.z * -1) - room.depth/2); // reverse depth mapping
+            rect.setAttribute('width', room.width);
+            rect.setAttribute('height', room.depth);
+            rect.setAttribute('fill', getMaterialColor(room.material));
+            rect.setAttribute('stroke', '#000');
+            rect.setAttribute('stroke-width', '0.1');
+            svg.appendChild(rect);
+        });
+    }
+
+    function updateCost() {
+      let totalCost = 0;
+      houseData.rooms.forEach(room => {
+        const areaSqft = room.width * room.depth * SQM_TO_SQFT;
+        room.cost = areaSqft * room.costPerSqft;
+        totalCost += room.cost;
+      });
+      document.getElementById('cost-overlay').innerText = `Total Est. Cost: ` + formatINR(totalCost);
+    }
+
+    function syncToDashboard() {
+        const roomsArray = houseData.rooms;
+        localStorage.setItem('dreamforge_rooms', JSON.stringify(roomsArray));
+        window.dispatchEvent(new CustomEvent('costUpdated', { detail: roomsArray }));
+    }
+
+    // Swapper functionality
+    document.querySelectorAll('.mat-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        if(!selectedRoomId) return;
+        const newMat = e.target.dataset.mat;
+        const newCost = parseFloat(e.target.dataset.cost);
+        
+        // Update data
+        const room = houseData.rooms.find(r => r.id === selectedRoomId);
+        room.material = newMat;
+        room.costPerSqft = newCost;
+        
+        renderRooms();
+        renderMinimap();
+        updateCost();
+        syncToDashboard();
+      });
+    });
+
+    document.getElementById('close-swapper').addEventListener('click', () => {
+      document.getElementById('material-swapper').classList.remove('active');
+    });
+
+    // AR Button
+    document.getElementById('ar-btn-custom').addEventListener('click', () => {
+      if (location.protocol !== "https:") {
+          alert("AR mode requires HTTPS. On local, use ngrok:\n\nngrok http 5000\n\nThen open the HTTPS ngrok URL on your phone.");
+          return;
+      }
+      const scene = document.querySelector('a-scene');
+      if (scene.is('ar-mode')) {
+        scene.exitVR();
+      } else {
+        scene.enterVR(true); // AR Hit test capability if supported
+      }
+    });
+
+  </script>
+</body>
+</html>

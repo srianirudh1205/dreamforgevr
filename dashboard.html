@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DreamForge VR Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg: #0D1B2A;
+      --accent: #C9A84C;
+      --card-bg: #1B263B;
+      --text: #FFFFFF;
+      --gray: #E0E0E0;
+    }
+    body {
+      margin: 0; padding: 20px;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    h1 { color: var(--accent); margin: 0 0 10px 0; font-size: 2.5em; }
+    h2 { color: var(--accent); margin-top: 0; }
+    .tagline { color: var(--gray); font-size: 1.2em; font-style: italic; }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    /* Chart */
+    .chart-container { position: relative; height: 300px; width: 100%; }
+
+    /* Timeline */
+    .timeline { list-style: none; padding: 0; margin: 0; }
+    .timeline li {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+    }
+    .timeline input[type="checkbox"] {
+      margin-right: 15px;
+      width: 20px; height: 20px;
+      cursor: pointer;
+    }
+
+    /* QR */
+    #qrcode {
+      background: white; padding: 15px; margin: 20px auto; 
+      display: inline-block; border-radius: 8px;
+    }
+    .url-input {
+      width: 100%; padding: 10px; margin-bottom: 10px;
+      border-radius: 5px; border: 1px solid var(--accent);
+      background: #0D1B2A; color: white;
+    }
+
+    /* Table (Contractor View) */
+    .contractor-view { display: none; margin-top: 20px; }
+    .contractor-view.active { display: block; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #415A77; }
+    th { color: var(--accent); }
+
+    .toggle-btn {
+      background: var(--accent); color: var(--bg);
+      border: none; padding: 10px 20px; border-radius: 5px;
+      font-weight: bold; cursor: pointer; display: block; margin: 20px auto;
+    }
+
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>DreamForge VR</h1>
+    <div class="tagline">Visualise. Estimate. Build.</div>
+  </header>
+
+  <button class="toggle-btn" id="contractor-toggle">Toggle Contractor View</button>
+
+  <div class="grid">
+    <!-- BUDGET SECTION -->
+    <div class="card" id="budget-card">
+      <h2>Budget Breakdown</h2>
+      <div class="chart-container">
+        <canvas id="budgetChart"></canvas>
+      </div>
+      <h3 style="text-align: center; margin-top: 15px;">Total: <span id="dash-total">₹0</span></h3>
+    </div>
+
+    <!-- CONTRACTOR VIEW SECTION -->
+    <div class="card contractor-view" id="contractor-card">
+      <h2>Contractor Cost Estimate</h2>
+      <table id="contractor-table">
+        <thead>
+          <tr>
+            <th>Room</th>
+            <th>Area (sqft)</th>
+            <th>Material</th>
+            <th>Cost (₹)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- TIMELINE SECTION -->
+    <div class="card">
+      <h2>Hackathon Progress</h2>
+      <ul class="timeline" id="timeline">
+        <!-- populated via js -->
+      </ul>
+    </div>
+
+    <!-- QR CODE SECTION -->
+    <div class="card" style="text-align: center;">
+      <h2>Try in VR/AR</h2>
+      <p>Scan to visualize on device</p>
+      <input type="text" id="deploy-url" class="url-input" value="https://<username>.github.io/dreamforge-vr/">
+      <div id="qrcode"></div>
+    </div>
+  </div>
+
+  <script>
+    // QR Code
+    let qr = new QRCode(document.getElementById("qrcode"), {
+      text: document.getElementById('deploy-url').value,
+      width: 150, height: 150,
+      colorDark : "#0D1B2A", colorLight : "#ffffff"
+    });
+    document.getElementById('deploy-url').addEventListener('input', (e) => {
+      qr.clear(); qr.makeCode(e.target.value);
+    });
+
+    // Timeline Setup
+    const phases = [
+      "Setup", "Data layer", "AI Parser", "3D Scene", 
+      "VR/AR", "Cost Estimator", "Dashboard", "Deploy", "Testing", "Demo"
+    ];
+    const timelineEl = document.getElementById('timeline');
+    let storedProgress = JSON.parse(localStorage.getItem('df_timeline')) || Array(10).fill(false);
+    
+    phases.forEach((phase, i) => {
+      const li = document.createElement('li');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = storedProgress[i];
+      cb.onchange = () => {
+        storedProgress[i] = cb.checked;
+        localStorage.setItem('df_timeline', JSON.stringify(storedProgress));
+      };
+      li.appendChild(cb);
+      li.appendChild(document.createTextNode(phase));
+      timelineEl.appendChild(li);
+    });
+
+    // Contractor View Toggle
+    document.getElementById('contractor-toggle').addEventListener('click', () => {
+      const bCard = document.getElementById('budget-card');
+      const cCard = document.getElementById('contractor-card');
+      if (cCard.classList.contains('active')) {
+        cCard.classList.remove('active');
+        bCard.style.display = 'block';
+      } else {
+        cCard.classList.add('active');
+        bCard.style.display = 'none';
+      }
+    });
+
+    function formatINR(amount) {
+        return "₹" + Math.round(amount).toLocaleString("en-IN");
+    }
+
+    // Chart.js & Data Sync
+    let budgetChart;
+    
+    function updateData() {
+      const dataStr = localStorage.getItem('dreamforge_rooms');
+      if(!dataStr) return;
+      const roomsArray = JSON.parse(dataStr);
+      
+      const labels = [];
+      const costs = [];
+      let total = 0;
+      const tbody = document.querySelector('#contractor-table tbody');
+      tbody.innerHTML = '';
+      
+      roomsArray.forEach(room => {
+        const areaSqft = room.width * room.depth * 10.7639;
+        const cost = Math.round(areaSqft * room.costPerSqft);
+        
+        labels.push(room.name);
+        costs.push(cost);
+        total += cost;
+
+        // Table Row
+        tbody.innerHTML += `
+          <tr>
+            <td>${room.name}</td>
+            <td>${Math.round(areaSqft).toLocaleString('en-IN')}</td>
+            <td><span style="text-transform:capitalize;">${room.material}</span></td>
+            <td>${formatINR(cost)}</td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('dash-total').innerText = formatINR(total);
+
+      if (budgetChart) {
+        budgetChart.data.labels = labels;
+        budgetChart.data.datasets[0].data = costs;
+        budgetChart.update();
+      } else {
+        const ctx = document.getElementById('budgetChart').getContext('2d');
+        budgetChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: costs,
+              backgroundColor: ['#C9A84C', '#415A77', '#7BC8A4', '#D4B896', '#E0E0E0'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'right', labels: { color: '#FFF' } },
+              tooltip: {
+                callbacks: {
+                  label: ctx => formatINR(ctx.parsed)
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Initial load + refresh every 2 seconds
+    updateData();
+    setInterval(updateData, 2000);
+
+  </script>
+</body>
+</html>
