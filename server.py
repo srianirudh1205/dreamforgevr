@@ -5,20 +5,18 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import requests
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)  # Enable CORS for all routes
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 @app.route("/", methods=["GET"])
 def index():
-    return """
-    <h1>DreamForge VR - Blueprint Parser</h1>
-    <form action="/parse-blueprint" method="POST" enctype="multipart/form-data">
-      <input type="file" name="blueprint" accept="image/*">
-      <button type="submit">Upload and Parse</button>
-    </form>
-    """
+    return app.send_static_file('index.html')
+
+@app.route("/dashboard.html", methods=["GET"])
+def dashboard():
+    return app.send_static_file('dashboard.html')
 
 @app.route("/house.json", methods=["GET"])
 def get_house_data():
