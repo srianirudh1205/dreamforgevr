@@ -129,7 +129,7 @@
     <a-image color="#ccc" position="0 3 -8" width="4" height="3"></a-image>
 
     <!-- Environment -->
-    <a-sky color="#87CEEB"></a-sky>
+    <a-sky src="assets/textures/sky.jpg" color="#87CEEB"></a-sky>
     <a-plane position="0 0 -5" rotation="-90 0 0" width="100" height="100" color="#7BC8A4"></a-plane>
 
     <!-- Rooms Container -->
@@ -186,7 +186,8 @@
         
         const img = new Image();
         img.onload = () => {
-             box.setAttribute('src', `assets/textures/${room.material}.jpg`);
+             box.setAttribute('color', '#FFFFFF');
+             box.setAttribute('material', `src: assets/textures/${room.material}.jpg; repeat: ${Math.max(1, Math.round(room.width/2))} ${Math.max(1, Math.round(room.height/2))}`);
         };
         img.src = `assets/textures/${room.material}.jpg`;
 
