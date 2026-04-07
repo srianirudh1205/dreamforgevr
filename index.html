@@ -176,7 +176,15 @@
       const container = document.getElementById('house-container');
       container.innerHTML = '';
       
+      let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+
       houseData.rooms.forEach(room => {
+        // Track bounds for roof
+        minX = Math.min(minX, room.position.x - room.width/2);
+        maxX = Math.max(maxX, room.position.x + room.width/2);
+        minZ = Math.min(minZ, room.position.z - room.depth/2);
+        maxZ = Math.max(maxZ, room.position.z + room.depth/2);
+
         const box = document.createElement('a-box');
         box.setAttribute('position', `${room.position.x} ${room.position.y} ${room.position.z}`);
         box.setAttribute('width', room.width);
@@ -211,6 +219,62 @@
 
         container.appendChild(box);
       });
+
+      // Generate Roof
+      const roofWidth = (maxX - minX) + 0.8; // 0.4m overhang on sides
+      const roofDepth = (maxZ - minZ) + 0.8;
+      const roofX = (minX + maxX) / 2;
+      const roofZ = (minZ + maxZ) / 2;
+      
+      const roofHeight = 0.3;
+      const roofY = 3.0 + roofHeight / 2; // Resting exactly on top
+
+      const roof = document.createElement('a-box');
+      roof.setAttribute('position', `${roofX} ${roofY} ${roofZ}`);
+      roof.setAttribute('width', roofWidth);
+      roof.setAttribute('height', roofHeight);
+      roof.setAttribute('depth', roofDepth);
+      roof.setAttribute('color', '#2c3e50'); // Sleek modern dark roof
+      container.appendChild(roof);
+
+      // Add Architectural Front Details (Door & Window)
+      const livingRoom = houseData.rooms.find(r => r.id === 'living');
+      if (livingRoom) {
+          const frontZ = livingRoom.position.z + (livingRoom.depth / 2) + 0.05;
+          const doorX = livingRoom.position.x - 0.8;
+
+          const door = document.createElement('a-plane');
+          door.setAttribute('position', `${doorX} 1.0 ${frontZ}`);
+          door.setAttribute('width', 1.2);
+          door.setAttribute('height', 2.0);
+          door.setAttribute('color', '#3e2723'); // Wood-like brown color
+
+          const knob = document.createElement('a-sphere');
+          knob.setAttribute('position', '0.4 0 0.02');
+          knob.setAttribute('radius', 0.06);
+          knob.setAttribute('color', '#FFD700'); // Gold finish
+          door.appendChild(knob);
+          
+          container.appendChild(door);
+
+          // Wide Window
+          const winX = livingRoom.position.x + 1.0;
+          const winFrame = document.createElement('a-plane');
+          winFrame.setAttribute('position', `${winX} 1.5 ${frontZ}`);
+          winFrame.setAttribute('width', 1.6);
+          winFrame.setAttribute('height', 1.2);
+          winFrame.setAttribute('color', '#222'); // Frame color
+
+          const glass = document.createElement('a-plane');
+          glass.setAttribute('position', '0 0 0.01');
+          glass.setAttribute('width', 1.5);
+          glass.setAttribute('height', 1.1);
+          glass.setAttribute('color', '#87CEFA'); // Sky blue reflection
+          glass.setAttribute('opacity', 0.8);
+          winFrame.appendChild(glass);
+
+          container.appendChild(winFrame);
+      }
     }
 
     function renderMinimap() {

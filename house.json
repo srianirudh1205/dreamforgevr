@@ -6,7 +6,7 @@
       "width": 5.5,
       "depth": 4.0,
       "height": 3.0,
-      "position": { "x": 0, "y": 1.5, "z": -6 },
+      "position": { "x": 0, "y": 1.5, "z": -4 },
       "material": "marble",
       "color": "#D4B896",
       "costPerSqft": 850
@@ -17,7 +17,7 @@
       "width": 5.0,
       "depth": 4.5,
       "height": 3.0,
-      "position": { "x": 5.75, "y": 1.5, "z": -6 },
+      "position": { "x": -5.25, "y": 1.5, "z": -4.25 },
       "material": "wood",
       "color": "#8B5A2B",
       "costPerSqft": 650
@@ -28,7 +28,7 @@
       "width": 4.0,
       "depth": 3.5,
       "height": 3.0,
-      "position": { "x": 10.75, "y": 1.5, "z": -6 },
+      "position": { "x": 4.75, "y": 1.5, "z": -3.75 },
       "material": "tile",
       "color": "#E0E0E0",
       "costPerSqft": 500
@@ -39,7 +39,7 @@
       "width": 3.0,
       "depth": 2.5,
       "height": 3.0,
-      "position": { "x": 14.75, "y": 1.5, "z": -6 },
+      "position": { "x": 5.25, "y": 1.5, "z": -6.75 },
       "material": "tile",
       "color": "#ADD8E6",
       "costPerSqft": 500
@@ -50,7 +50,7 @@
       "width": 3.5,
       "depth": 3.0,
       "height": 3.0,
-      "position": { "x": 18.50, "y": 1.5, "z": -6 },
+      "position": { "x": -1.00, "y": 1.5, "z": -7.5 },
       "material": "wood",
       "color": "#deb887",
       "costPerSqft": 650
