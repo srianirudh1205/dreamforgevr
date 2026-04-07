@@ -1,0 +1,26 @@
+{
+  "builds": [
+    {
+      "src": "server.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/parse-blueprint",
+      "dest": "server.py"
+    },
+    {
+      "src": "/house.json",
+      "dest": "server.py"
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
+    }
+  ]
+}
